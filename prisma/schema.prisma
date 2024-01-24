@@ -1,0 +1,61 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Status {
+  PENDING
+  ACCEPTED
+  REJECTED
+}
+
+model User {
+  id        String   @id @default(uuid())
+  email     String   @unique
+  name      String
+  password  String
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  Event          Event[]
+  sentEvents     EventShare[] @relation("EventSharesSender")
+  receivedEvents EventShare[] @relation("EventSharesReceiver")
+
+  @@map("users")
+}
+
+model Event {
+  id              String       @id @default(uuid())
+  title           String
+  description     String
+  startTime       DateTime     @map("start_time")
+  endTime         DateTime     @map("end_time")
+  createdBy       User         @relation(fields: [createdByUserId], references: [id])
+  createdByUserId String       @map("created_by_user_id")
+  EventShare      EventShare[]
+
+  @@map("events")
+}
+
+model EventShare {
+  id         String   @id @default(uuid())
+  eventId    String
+  senderId   String
+  receiverId String
+  status     Status   @default(PENDING)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  event    Event @relation(fields: [eventId], references: [id])
+  sender   User  @relation("EventSharesSender", fields: [senderId], references: [id])
+  receiver User  @relation("EventSharesReceiver", fields: [receiverId], references: [id])
+
+  @@map("event_shares")
+}
